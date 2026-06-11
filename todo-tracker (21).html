@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<title>TODO Tracker</title>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #fdf8ee;
+  --bg2:         #f0e9d8;
+  --surface:     #ffffff;
+  --surface2:    #f7f4ef;
+  --border:      rgba(0,0,0,0.08);
+  --border2:     rgba(0,0,0,0.16);
+  --text:        #111112;
+  --text-mid:    #3a3a3f;
+  --text-muted:  #8a8a96;
+  --accent:      #cf6033;
+  --accent-light:#fbeee8;
+  --accent-mid:  #e8855a;
+  --done-color:  #d4704a;
+  --done-light:  #fdf0eb;
+  --warn:        #b8860b;
+  --warn-light:  #fdf6e3;
+  --radius:      14px;
+  --radius-sm:   9px;
+  --shadow:      0 1px 8px rgba(0,0,0,0.06);
+  --shadow-md:   0 4px 20px rgba(0,0,0,0.10);
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 5rem;
+}
+
+/* ─── HEADER ─── */
+.hero {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+}
+.hero-inner { max-width: 720px; margin: 0 auto; }
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.brand h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  -webkit-text-stroke: 0.6px var(--text);
+}
+.brand h1 em { font-style: italic; color: var(--accent); font-family: 'DM Serif Display', serif; -webkit-text-stroke: 0.6px var(--accent); }
+.brand p { margin-top: 3px; font-size: 0.75rem; color: var(--text-muted); font-weight: 300; }
+.today-chip {
+  background: var(--accent-light);
+  border: 1px solid rgba(207,96,51,0.25);
+  border-radius: 50px;
+  padding: 5px 13px;
+  font-size: 0.76rem;
+  color: var(--accent);
+  white-space: nowrap;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.lang-toggle {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 50px;
+  padding: 4px 12px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.lang-toggle:hover { border-color: var(--accent-mid); color: var(--accent); background: var(--accent-light); }
+.overall-wrap { display: flex; align-items: center; gap: 12px; }
+.overall-track { flex: 1; height: 5px; background: var(--bg2); border-radius: 99px; overflow: hidden; }
+.overall-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-mid), var(--accent));
+  border-radius: 99px;
+  transition: width 0.4s cubic-bezier(.4,0,.2,1);
+}
+.overall-pct { font-size: 0.78rem; color: var(--text-mid); font-weight: 500; min-width: 34px; text-align: right; }
+
+/* ─── TAB NAV ─── */
+.tab-nav {
+  max-width: 720px;
+  margin: 1.25rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px 10px;
+  font-size: 0.82rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 400;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tab-btn.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+.tab-badge {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 50px;
+}
+
+/* ─── STATS ─── */
+.stats-row {
+  max-width: 720px;
+  margin: 1.25rem auto 0;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.stat-n { font-size: 1.35rem; font-weight: 500; color: var(--accent); line-height: 1; }
+.stat-l { font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; font-weight: 300; }
+
+/* ─── ADD FORM ─── */
+.add-wrap { max-width: 720px; margin: 1.25rem auto 0; padding: 0 2rem; }
+.add-form {
+  display: flex;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 8px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.add-form:focus-within {
+  border-color: var(--accent-mid);
+  box-shadow: var(--shadow-md), 0 0 0 3px rgba(207,96,51,0.1);
+}
+.add-form input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 300;
+  outline: none;
+}
+.add-form input::placeholder { color: var(--text-muted); }
+.add-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-size: 0.83rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.add-btn:hover { background: var(--accent-mid); }
+.add-btn:active { transform: scale(0.97); }
+
+/* ─── IO BAR ─── */
+.io-bar {
+  max-width: 720px;
+  margin: 0.75rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.io-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.76rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  box-shadow: var(--shadow);
+}
+.io-btn:hover { background: var(--surface2); border-color: var(--accent-mid); color: var(--accent); }
+.io-btn:active { transform: scale(0.97); }
+.io-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.io-hint { margin-left: auto; font-size: 0.68rem; color: var(--text-muted); font-weight: 300; }
+
+/* ─── FILTER ─── */
+.list-header {
+  max-width: 720px;
+  margin: 1rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.list-count { font-size: 0.73rem; color: var(--text-muted); font-weight: 300; }
+
+
+/* ─── TASK LIST ─── */
+.task-list {
+  max-width: 720px;
+  margin: 0.875rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.empty-state {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 300;
+}
+.empty-state .ei {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-mid);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* ─── TASK CARD ─── */
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px 12px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s, border-color 0.2s;
+  animation: fadeSlide 0.2s ease;
+}
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.task-card:hover { box-shadow: var(--shadow-md); border-color: var(--border2); }
+.task-card.is-done { background: var(--done-light); border-color: rgba(212,112,74,0.2); }
+
+.card-top { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 10px; }
+
+/* check icon */
+.check-icon {
+  width: 21px; height: 21px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem; line-height: 1;
+  margin-top: 1px;
+  opacity: 0.18;
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(.4,1.6,.6,1);
+  user-select: none;
+}
+.task-card.is-done .check-icon {
+  opacity: 1;
+  animation: popIn 0.28s cubic-bezier(.4,1.6,.6,1);
+}
+@keyframes popIn {
+  from { transform: scale(0.4) rotate(-15deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* card name */
+.card-name {
+  flex: 1;
+  font-size: 0.91rem;
+  font-weight: 400;
+  line-height: 1.45;
+  word-break: break-all;
+  color: var(--text);
+  cursor: text;
+  border-radius: 5px;
+  padding: 1px 4px;
+  margin: -1px -4px;
+  transition: background 0.15s;
+}
+.card-name:hover { background: var(--bg2); }
+.task-card.is-done .card-name { color: var(--text-muted); }
+.card-name-input {
+  flex: 1;
+  font-size: 0.91rem;
+  font-weight: 400;
+  line-height: 1.45;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--accent-mid);
+  border-radius: 6px;
+  padding: 2px 8px;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(207,96,51,0.1);
+  width: 100%;
+}
+
+.card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.pct-badge { font-size: 0.78rem; font-weight: 500; color: var(--accent); min-width: 32px; text-align: right; }
+.task-card.is-done .pct-badge { color: var(--done-color); }
+.del-btn {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 3px 5px; border-radius: 5px;
+  font-size: 0.82rem; line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+.del-btn:hover { color: #c0392b; background: rgba(192,57,43,0.08); }
+
+.close-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: 50px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  white-space: nowrap;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.close-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-mid);
+  color: var(--accent);
+}
+.task-card.is-done .close-btn { display: none; }
+
+
+/* slider */
+.slider-row {
+  position: relative; height: 24px;
+  display: flex; align-items: center;
+  margin-bottom: 9px;
+}
+.s-track {
+  position: absolute; inset: 0; margin: auto;
+  height: 4px; background: var(--bg2); border-radius: 99px;
+  pointer-events: none; overflow: hidden;
+}
+.s-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-mid), var(--accent));
+  border-radius: 99px; transition: width 0.08s;
+}
+.task-card.is-done .s-fill { background: linear-gradient(90deg, #f0a882, var(--done-color)); }
+
+input[type=range] {
+  position: relative; width: 100%; height: 24px;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; cursor: grab; z-index: 1;
+}
+input[type=range]:active { cursor: grabbing; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(100,60,20,0.18);
+  transition: transform 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+.task-card.is-done input[type=range]::-webkit-slider-thumb { border-color: var(--done-color); }
+
+/* date meta */
+.card-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.meta-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.7rem; color: var(--text-muted); font-weight: 300;
+}
+.meta-chip svg { width: 11px; height: 11px; flex-shrink: 0; opacity: 0.6; }
+.meta-chip.done-chip { color: var(--done-color); font-weight: 500; }
+.meta-chip.done-chip svg { opacity: 0.8; }
+.rollover-badge {
+  margin-left: auto; font-size: 0.68rem;
+  background: var(--warn-light); color: var(--warn);
+  border: 1px solid rgba(184,134,11,0.2);
+  border-radius: 50px; padding: 2px 9px; font-weight: 500;
+}
+
+
+/* ─── DATE GROUP ─── */
+.date-group { margin-bottom: 4px; }
+
+.date-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  margin-bottom: 6px;
+}
+.date-group-header:hover { background: var(--bg2); }
+
+.date-group-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.date-group-label.today-label { color: var(--accent); }
+
+.date-group-count {
+  font-size: 0.68rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 50px;
+  padding: 1px 8px;
+  font-weight: 400;
+}
+
+.date-group-chevron {
+  margin-left: auto;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.date-group-chevron.collapsed { transform: rotate(-90deg); }
+
+.date-group-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.date-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow: hidden;
+  transition: max-height 0.28s ease;
+}
+.date-group-body.collapsed { max-height: 0 !important; }
+
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 2px 4px 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.section-label.active-label { color: var(--accent); }
+
+/* ─── CALENDAR VIEW ─── */
+.cal-wrap {
+  max-width: 720px;
+  margin: 1.25rem auto 0;
+  padding: 0 2rem;
+  display: none;
+}
+.cal-wrap.visible { display: block; }
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.cal-nav {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-mid);
+  font-size: 1rem;
+  transition: background 0.15s;
+}
+.cal-nav:hover { background: var(--bg2); }
+.cal-month-label {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.cal-month-label em { font-style: normal; color: var(--accent); font-weight: 700; }
+
+.cal-grid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.cal-days-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.cal-day-name {
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.cal-day-name:first-child { color: #e05555; }
+.cal-day-name:last-child  { color: #5577cc; }
+
+.cal-cells {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.cal-cell {
+  min-height: 72px;
+  padding: 7px 8px 5px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: default;
+  transition: background 0.15s;
+  position: relative;
+}
+.cal-cell:nth-child(7n) { border-right: none; }
+.cal-cell.other-month { background: var(--surface2); }
+.cal-cell.other-month .cal-date-num { color: var(--text-muted); opacity: 0.4; }
+.cal-cell.is-today { background: var(--accent-light); }
+.cal-cell.has-done { cursor: pointer; }
+.cal-cell.has-done:hover { background: var(--bg2); }
+.cal-cell.selected { background: var(--accent-light); box-shadow: inset 0 0 0 2px var(--accent); }
+
+.cal-date-num {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.cal-cell.is-today .cal-date-num {
+  color: var(--accent);
+  font-weight: 700;
+}
+.cal-cell:nth-child(7n+1) .cal-date-num { color: #e05555; }
+.cal-cell:nth-child(7n)   .cal-date-num { color: #5577cc; }
+.cal-cell.is-today .cal-date-num { color: var(--accent) !important; }
+
+.cal-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+.cal-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+/* ─── ARCHIVE DETAIL PANEL ─── */
+.archive-panel {
+  max-width: 720px;
+  margin: 1.25rem auto 0;
+  padding: 0 2rem;
+  display: none;
+}
+.archive-panel.visible { display: block; }
+.archive-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.archive-date-label {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 1rem;
+  color: var(--text);
+}
+.archive-date-label em { font-style: normal; font-weight: 700; color: var(--accent); }
+.archive-close {
+  background: none; border: none;
+  color: var(--text-muted); font-size: 0.8rem;
+  cursor: pointer; padding: 4px 8px;
+  border-radius: 5px; transition: background 0.15s;
+}
+.archive-close:hover { background: var(--bg2); color: var(--text); }
+
+.archive-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  margin-bottom: 7px;
+  box-shadow: var(--shadow);
+  animation: fadeSlide 0.18s ease;
+}
+.archive-item-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.archive-item-name .flag { font-size: 0.95rem; }
+.archive-item-meta { font-size: 0.7rem; color: var(--text-muted); font-weight: 300; }
+.archive-item-meta span { margin-right: 12px; }
+
+.archive-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 300;
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 2rem; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--text); color: var(--surface);
+  font-size: 0.78rem; padding: 8px 18px;
+  border-radius: 50px; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap; z-index: 100;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 600px) {
+
+  /* hero */
+  .hero { padding: 1rem 1rem 1rem; }
+  .brand h1 { font-size: 1.25rem; }
+  .brand p { display: none; }
+  .today-chip { font-size: 0.7rem; padding: 4px 10px; }
+  .lang-toggle { padding: 4px 10px; font-size: 0.7rem; }
+
+  /* tabs */
+  .tab-nav { padding: 0 1rem; }
+  .tab-btn { font-size: 0.78rem; padding: 7px 10px 9px; }
+  .tab-badge { font-size: 0.65rem; padding: 1px 6px; }
+
+  /* stats */
+  .stats-row { padding: 0 1rem; gap: 8px; margin-top: 1rem; }
+  .stat-n { font-size: 1.2rem; }
+  .stat-l { font-size: 0.68rem; }
+  .stat-card { padding: 10px 8px; }
+
+  /* add form */
+  .add-wrap { padding: 0 1rem; margin-top: 1rem; }
+  .add-form input { font-size: 0.95rem; padding: 10px 8px; }
+  .add-btn { padding: 10px 14px; font-size: 0.82rem; }
+
+  /* io bar */
+  .io-bar { padding: 0 1rem; flex-wrap: wrap; gap: 6px; }
+  .io-hint { display: none; }
+  .io-btn { font-size: 0.75rem; padding: 6px 12px; }
+
+  /* list */
+  .list-header { padding: 0 1rem; }
+  .task-list { padding: 0 1rem; gap: 8px; }
+
+  /* task card */
+  .task-card { padding: 13px 13px 11px; }
+  .card-name { font-size: 0.88rem; }
+  .pct-badge { font-size: 0.78rem; min-width: 30px; }
+  .close-btn { font-size: 0.68rem; padding: 3px 8px; }
+
+  /* bigger slider thumb for touch */
+  input[type=range] { height: 36px; }
+  input[type=range]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+    border-width: 3px;
+  }
+  .s-track { height: 5px; }
+  .s-fill { height: 5px; }
+  .slider-row { height: 36px; margin-bottom: 10px; }
+
+  /* meta chips */
+  .meta-chip { font-size: 0.68rem; }
+  .rollover-badge { font-size: 0.66rem; padding: 2px 8px; }
+
+  /* date group */
+  .date-group-label { font-size: 0.68rem; }
+  .date-group-count { font-size: 0.65rem; }
+
+  /* calendar */
+  .cal-wrap { padding: 0 1rem; }
+  .cal-month-label { font-size: 0.95rem; }
+  .cal-nav { width: 28px; height: 28px; font-size: 0.9rem; }
+  .cal-cell { min-height: 52px; padding: 5px 4px 4px; }
+  .cal-date-num { font-size: 0.72rem; }
+  .cal-dot { width: 4px; height: 4px; }
+  .cal-day-name { font-size: 0.65rem; padding: 6px 2px; }
+
+  /* archive panel */
+  .archive-panel { padding: 0 1rem; }
+  .archive-item { padding: 10px 12px; }
+  .archive-item-name { font-size: 0.84rem; }
+  .archive-item-meta { font-size: 0.68rem; }
+
+  /* section label */
+  .section-label { font-size: 0.68rem; }
+
+  /* toast */
+  .toast { font-size: 0.75rem; padding: 7px 16px; bottom: 1.5rem; width: 85%; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-top">
+      <div class="brand">
+        <h1>TODO <em>tracker</em></h1>
+        <p>Track it. Move it. Done.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0"><button class="lang-toggle" onclick="toggleLang()" id="lang-btn">EN</button><div class="today-chip" id="today-chip"></div></div>
+    </div>
+    <div class="overall-wrap">
+      <div class="overall-track"><div class="overall-fill" id="overall-fill" style="width:0%"></div></div>
+      <div class="overall-pct" id="overall-pct">0%</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="tab-btn on" id="tab-todo" onclick="switchTab('todo')">할 일 목록</button>
+  <button class="tab-btn" id="tab-cal" onclick="switchTab('cal')">캘린더 아카이브 <span class="tab-badge" id="archive-count">0</span></button>
+</div>
+
+<!-- ══ TODO TAB ══ -->
+<div id="pane-todo">
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-n" id="sn-total">0</div><div class="stat-l">전체 항목</div></div>
+    <div class="stat-card"><div class="stat-n" id="sn-active">0</div><div class="stat-l">진행중</div></div>
+    <div class="stat-card"><div class="stat-n" id="sn-roll" style="color:var(--warn)">0</div><div class="stat-l">이월된 항목</div></div>
+  </div>
+
+  <!-- ADD -->
+  <div class="add-wrap">
+    <div class="add-form">
+      <input type="text" id="new-task" placeholder="What's on your plate today?" maxlength="100">
+      <button class="add-btn" onclick="addTask()">+ 추가</button>
+    </div>
+  </div>
+
+  <!-- IO -->
+  <div class="io-bar">
+    <button class="io-btn" onclick="exportJSON()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 2v8M5 7l3 3 3-3"/>
+        <path d="M3 11v1.5A1.5 1.5 0 004.5 14h7A1.5 1.5 0 0013 12.5V11"/>
+      </svg>내보내기
+    </button>
+    <button class="io-btn" onclick="document.getElementById('import-file').click()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 10V2M5 5l3-3 3 3"/>
+        <path d="M3 11v1.5A1.5 1.5 0 004.5 14h7A1.5 1.5 0 0013 12.5V11"/>
+      </svg>불러오기
+    </button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+    <span class="io-hint">JSON으로 다른 기기와 동기화</span>
+  </div>
+
+  <!-- FILTER -->
+  <div class="list-header">
+    <span class="list-count" id="list-count">0개 항목</span>
+  </div>
+
+  <!-- LIST -->
+  <div class="task-list" id="task-list"></div>
+</div>
+
+<!-- ══ CALENDAR TAB ══ -->
+<div id="pane-cal" style="display:none">
+  <div class="cal-wrap visible">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calMove(-1)">&#8249;</button>
+      <div class="cal-month-label" id="cal-month-label"></div>
+      <button class="cal-nav" onclick="calMove(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-days-header" id="cal-day-names"></div>
+      <div class="cal-cells" id="cal-cells"></div>
+    </div>
+  </div>
+
+  <!-- ARCHIVE DETAIL -->
+  <div class="archive-panel" id="archive-panel">
+    <div class="archive-panel-header">
+      <div class="archive-date-label" id="archive-date-label"></div>
+      <button class="archive-close" onclick="closeArchive()">✕ 닫기</button>
+    </div>
+    <div id="archive-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── helpers ───────────────────────────────────────────────
+const isoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const today   = () => isoDate(new Date());
+// ISO 문자열을 로컬 시간 기준으로 생성 (UTC 오프셋 보정)
+const localISO = d => {
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+const fmtDate = s => { if (!s) return ''; const [y,m,d] = s.split('-'); return `${y}.${m}.${d}`; };
+const fmtDT   = s => {
+  if (!s) return '';
+  const dt = new Date(s);
+  return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const DAY_NAMES = ['일','월','화','수','목','금','토']; // legacy, use L().dayNames
+
+// ─── state ─────────────────────────────────────────────────
+let tasks  = [];
+
+let currentTab = 'todo';
+let calYear, calMonth, selectedDate = null;
+const KEY = 'tasks_v3';
+
+function load() {
+  try { tasks = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { tasks = []; }
+  // migrate from v2
+  const old = localStorage.getItem('tasks_v2');
+  if (old && !tasks.length) {
+    try { tasks = JSON.parse(old); save(); } catch {}
+  }
+  // 기존 UTC doneAt('Z' 포함) → 로컬 ISO로 변환 (매번 실행)
+  let changed = false;
+  tasks.forEach(t => {
+    if (t.doneAt && t.doneAt.endsWith('Z')) {
+      t.doneAt = localISO(new Date(t.doneAt));
+      changed = true;
+    }
+  });
+
+  // 완료(100%)인데 doneAt이 null인 항목 → 단 한 번만 복원 (마이그레이션 플래그로 관리)
+  const migrated = localStorage.getItem('migrated_doneAt_v1');
+  if (!migrated) {
+    tasks.forEach(t => {
+      if ((t.progress === 100 || t.closedAsIs) && !t.doneAt) {
+        const base = t.startDate || today();
+        t.doneAt = base + 'T23:59:00';
+        changed = true;
+      }
+    });
+    localStorage.setItem('migrated_doneAt_v1', '1');
+  }
+
+  if (changed) save();
+  rollover();
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(tasks)); }
+
+function rollover() {
+  const td = today();
+  tasks.forEach(t => {
+    if (t.progress < 100 && t.startDate < td && !t.rolledFrom)
+      t.rolledFrom = t.startDate;
+  });
+  save();
+}
+
+function daysSince(d) {
+  if (!d) return 0;
+  const s = new Date(d + 'T00:00:00');
+  const n = new Date(today() + 'T00:00:00');
+  return Math.round((n - s) / 86400000);
+}
+
+// ─── tab ───────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('pane-todo').style.display = tab === 'todo' ? '' : 'none';
+  document.getElementById('pane-cal').style.display  = tab === 'cal'  ? '' : 'none';
+  document.getElementById('tab-todo').classList.toggle('on', tab === 'todo');
+  document.getElementById('tab-cal').classList.toggle('on', tab === 'cal');
+  if (tab === 'cal') renderCal();
+}
+
+// ─── actions ───────────────────────────────────────────────
+function addTask() {
+  const inp = document.getElementById('new-task');
+  const name = inp.value.trim();
+  if (!name) return;
+  tasks.unshift({ id: Date.now(), name, progress: 0, startDate: today(), doneAt: null, rolledFrom: null });
+  inp.value = '';
+  save(); render();
+}
+
+function del(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  save(); render();
+}
+
+function closeAsIs(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task || task.closedAsIs) return;
+  task.closedAsIs = true;
+  task.doneAt = localISO(new Date());
+  save();
+  setTimeout(() => render(), 350);
+}
+
+
+function setProgress(id, val) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  const v = parseInt(val);
+  const wasDone = t.progress === 100;
+  t.progress = v;
+  if (v === 100 && !wasDone) t.doneAt = localISO(new Date());
+  else if (v < 100 && wasDone) t.doneAt = null;
+  save(); updateStats();
+  // re-render after brief delay so completion animation plays
+  if (v === 100) setTimeout(() => render(), 500);
+}
+
+function live(id, val) {
+  const v = parseInt(val);
+  const el = document.getElementById('c-'+id);
+  if (!el) return;
+  el.querySelector('.pct-badge').textContent = v+'%';
+  el.querySelector('.s-fill').style.width = v+'%';
+  el.classList.toggle('is-done', v === 100);
+  const t = tasks.find(t => t.id === id);
+  if (t) t.progress = v;
+  updateStats();
+}
+
+
+
+// ─── stats ─────────────────────────────────────────────────
+function updateStats() {
+  const total  = tasks.length;
+  const active = tasks.filter(t => t.progress < 100 && !t.closedAsIs).length;
+  const done   = tasks.filter(t => t.progress === 100 || t.closedAsIs).length;
+  const rolled = tasks.filter(t => t.progress < 100 && !t.closedAsIs && t.rolledFrom).length;
+  const avg    = total ? Math.round(tasks.reduce((s,t) => s+t.progress, 0) / total) : 0;
+
+  document.getElementById('sn-total').textContent  = total;
+  document.getElementById('sn-active').textContent = active;
+  document.getElementById('sn-roll').textContent   = rolled;
+  document.getElementById('overall-fill').style.width = avg+'%';
+  document.getElementById('overall-pct').textContent  = avg+'%';
+  document.getElementById('archive-count').textContent = tasks.filter(t => t.progress === 100 || t.closedAsIs).length;
+
+  document.getElementById('list-count').textContent = tasks.filter(t => t.progress < 100 && !t.closedAsIs).length + L().items;
+}
+
+// ─── render todo ───────────────────────────────────────────
+// collapsed state for done date groups
+const collapsedGroups = new Set();
+
+
+
+function taskCardHTML(t) {
+  const isDone   = t.progress === 100 || !!t.closedAsIs;
+  const days     = !isDone && t.rolledFrom ? daysSince(t.rolledFrom) : 0;
+  const isRolled = !isDone && t.rolledFrom && days > 0;
+
+  let meta = `<span class="meta-chip">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="2" y="3" width="12" height="11" rx="2"/><path d="M5 1v3M11 1v3M2 7h12"/>
+    </svg>${L().started} ${fmtDate(t.startDate)}</span>`;
+
+  if (isDone && t.doneAt) {
+    meta += `<span class="meta-chip done-chip">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="6"/><path d="M5 8.5l2 2 4-4"/>
+      </svg>${L().completed} ${fmtDT(t.doneAt)}</span>`;
+  }
+  if (isRolled) meta += `<span class="rollover-badge">${days}${L().days}</span>`;
+
+  const closeBtn = !isDone
+    ? `<button class="close-btn" onclick="closeAsIs(${t.id})">${lang === 'en' ? 'Close as-is' : '이대로 완료'}</button>`
+    : '';
+
+  return `<div class="task-card ${isDone?'is-done':''}" id="c-${t.id}">
+    <div class="card-top">
+      <div class="check-icon">🏁</div>
+      <div class="card-name" title="클릭하여 수정" onclick="startEdit(${t.id},this)">${esc(t.name)}</div>
+      <div class="card-actions">
+        ${closeBtn}
+        <div class="pct-badge">${t.progress}%</div>
+        <button class="del-btn" onclick="del(${t.id})" title="삭제">✕</button>
+      </div>
+    </div>
+    <div class="slider-row">
+      <div class="s-track"><div class="s-fill" style="width:${t.progress}%"></div></div>
+      <input type="range" min="0" max="100" step="1" value="${t.progress}"
+        oninput="live(${t.id},this.value)" onchange="setProgress(${t.id},this.value)">
+    </div>
+    <div class="card-meta">${meta}</div>
+  </div>`;
+}
+
+function fmtGroupLabel(ds) {
+  const td = today();
+  if (ds === td) return { text: L().labelToday, isToday: true };
+  const d = new Date(ds + 'T00:00:00');
+  const diff = Math.round((new Date(td + 'T00:00:00') - d) / 86400000);
+  if (diff === 1) return { text: L().labelYesterday, isToday: false };
+  if (lang === 'en') return { text: `${L().dayNames[d.getDay()]} ${d.getMonth()+1}/${d.getDate()}`, isToday: false };
+  return { text: `${d.getMonth()+1}월 ${d.getDate()}일 (${L().dayNames[d.getDay()]})`, isToday: false };
+}
+
+function toggleGroup(ds) {
+  if (collapsedGroups.has(ds)) collapsedGroups.delete(ds);
+  else collapsedGroups.add(ds);
+  // just toggle classes, no full re-render
+  const body = document.getElementById('grp-body-' + ds);
+  const chev = document.getElementById('grp-chev-' + ds);
+  if (body) {
+    const isNowCollapsed = collapsedGroups.has(ds);
+    body.classList.toggle('collapsed', isNowCollapsed);
+    if (!isNowCollapsed) body.style.maxHeight = body.scrollHeight + 'px';
+    else body.style.maxHeight = '0px';
+    if (chev) chev.classList.toggle('collapsed', isNowCollapsed);
+  }
+}
+
+function render() {
+  updateStats();
+  const now = new Date();
+  document.getElementById('today-chip').textContent =
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${L().dayNames[now.getDay()]})`;
+
+  const list = document.getElementById('task-list');
+  const td   = today();
+
+  // ── active tasks: newest first (not done, sorted by id desc)
+  const active = tasks
+    .filter(t => t.progress < 100 && !t.closedAsIs)
+    .sort((a, b) => b.id - a.id);
+
+  // ── done tasks: grouped by completion date, newest group first
+  const doneByDate = {};
+  tasks.filter(t => (t.progress === 100 || t.closedAsIs) && t.doneAt).forEach(t => {
+    const ds = isoDate(new Date(t.doneAt));
+    if (!doneByDate[ds]) doneByDate[ds] = [];
+    doneByDate[ds].push(t);
+  });
+  // sort tasks within each group by doneAt desc
+  Object.values(doneByDate).forEach(arr => arr.sort((a,b) => b.doneAt.localeCompare(a.doneAt)));
+  const doneDates = Object.keys(doneByDate).sort((a,b) => b.localeCompare(a));
+
+  if (!active.length && !doneDates.length) {
+    list.innerHTML = `<div class="empty-state"><span class="ei">${L().emptyAll}</span></div>`;
+    return;
+  }
+
+  let html = '';
+
+  // ── active section
+  if (active.length) {
+    html += `<div class="section-label active-label">${L().sectionActive} · ${active.length}${L().items}</div>`;
+    html += active.map(taskCardHTML).join('');
+  } else {
+    html += `<div class="empty-state" style="padding:1.5rem 0"><span class="ei" style="font-size:1.1rem">${L().sectionNone}</span></div>`;
+  }
+
+  // ── done groups
+  if (doneDates.length) {
+    html += `<div style="height:12px"></div>`;
+    doneDates.forEach(ds => {
+      const items     = doneByDate[ds];
+      const lbl       = fmtGroupLabel(ds);
+      const collapsed = collapsedGroups.has(ds);
+      const chevCls   = collapsed ? 'date-group-chevron collapsed' : 'date-group-chevron';
+      html += `
+        <div class="date-group">
+          <div class="date-group-header" onclick="toggleGroup('${ds}')">
+            <div class="date-group-label ${lbl.isToday?'today-label':''}">${lbl.text}</div>
+            <div class="date-group-count">${items.length}${L().groupDone}</div>
+            <div class="date-group-divider"></div>
+            <div class="${chevCls}" id="grp-chev-${ds}">▾</div>
+          </div>
+          <div class="date-group-body ${collapsed?'collapsed':''}" id="grp-body-${ds}"
+               style="max-height:${collapsed?'0px':'9999px'}">
+            ${items.map(taskCardHTML).join('')}
+          </div>
+        </div>`;
+    });
+  }
+
+  list.innerHTML = html;
+}
+
+// ─── inline edit ───────────────────────────────────────────
+function startEdit(id, el) {
+  if (el.querySelector('input')) return;
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  const original = t.name;
+  el.removeAttribute('onclick');
+  el.style.cursor = 'default';
+  el.style.background = 'none';
+  el.style.padding = '0'; el.style.margin = '0';
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.className = 'card-name-input';
+  inp.value = original; inp.maxLength = 100;
+  el.textContent = ''; el.appendChild(inp);
+  inp.focus(); inp.select();
+  function commit() {
+    const val = inp.value.trim();
+    if (val && val !== original) { t.name = val; save(); }
+    render();
+  }
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') render();
+  });
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('mousedown', e => e.stopPropagation());
+}
+
+// ─── calendar ──────────────────────────────────────────────
+function initCal() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+}
+
+function calMove(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  selectedDate = null;
+  document.getElementById('archive-panel').classList.remove('visible');
+  renderCal();
+}
+
+// build map: date string -> { done: [], active: [] }
+function buildDateMap() {
+  const map = {};
+  const ensure = ds => { if (!map[ds]) map[ds] = { done: [], active: [] }; };
+  const td = today();
+
+  tasks.forEach(t => {
+    if ((t.progress === 100 || t.closedAsIs) && t.doneAt) {
+      // 완료 항목: doneAt 날짜에 표시
+      const ds = isoDate(new Date(t.doneAt));
+      ensure(ds); map[ds].done.push(t);
+    } else if (t.progress < 100 && !t.closedAsIs) {
+      // 미완료 항목: startDate부터 오늘까지 매일 active로 등록
+      const start = t.startDate || td;
+      let cur = new Date(start + 'T00:00:00');
+      const end = new Date(td + 'T00:00:00');
+      while (cur <= end) {
+        const ds = isoDate(cur);
+        ensure(ds);
+        // 같은 날 중복 방지
+        if (!map[ds].active.includes(t)) map[ds].active.push(t);
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+  });
+  return map;
+}
+
+function renderCal() {
+  const dateMap = buildDateMap();
+  const td = today();
+  const label = document.getElementById('cal-month-label');
+  label.innerHTML = lang === 'en' ? `<em>${new Date(calYear,calMonth).toLocaleDateString('en-US',{month:'long'})} ${calYear}</em>` : `${calYear}년 <em>${calMonth+1}월</em>`;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
+
+  const cells = document.getElementById('cal-cells');
+  let html = '';
+  let total = 42;
+
+  for (let i = 0; i < total; i++) {
+    let date, isOther = false;
+    if (i < firstDay) {
+      date = new Date(calYear, calMonth-1, daysInPrev - firstDay + i + 1);
+      isOther = true;
+    } else if (i >= firstDay + daysInMonth) {
+      date = new Date(calYear, calMonth+1, i - firstDay - daysInMonth + 1);
+      isOther = true;
+    } else {
+      date = new Date(calYear, calMonth, i - firstDay + 1);
+    }
+
+    const ds      = isoDate(date);
+    const isToday = ds === td;
+    const entry   = dateMap[ds] || { done: [], active: [] };
+    const hasAny  = entry.done.length > 0 || entry.active.length > 0;
+    const isSel   = ds === selectedDate;
+
+    let cls = 'cal-cell';
+    if (isOther)  cls += ' other-month';
+    if (isToday)  cls += ' is-today';
+    if (hasAny)   cls += ' has-done';
+    if (isSel)    cls += ' selected';
+
+    // 완료 점(주황) + 진행중 점(회색)
+    const doneDots   = entry.done.slice(0,4).map(() => `<div class="cal-dot"></div>`).join('');
+    const activeDots = entry.active.slice(0,2).map(() => `<div class="cal-dot" style="background:var(--text-muted);opacity:0.4"></div>`).join('');
+
+    html += `<div class="${cls}" onclick="selectDate('${ds}')">
+      <div class="cal-date-num">${date.getDate()}</div>
+      <div class="cal-dots">${doneDots}${activeDots}</div>
+    </div>`;
+  }
+
+  cells.innerHTML = html;
+  const dn = L().dayNames;
+  document.getElementById('cal-day-names').innerHTML = dn.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+  if (selectedDate) showArchive(selectedDate);
+}
+
+function selectDate(ds) {
+  selectedDate = ds;
+  renderCal();
+  showArchive(ds);
+}
+
+function showArchive(ds) {
+  const dateMap  = buildDateMap();
+  const entry    = dateMap[ds] || { done: [], active: [] };
+  const panel    = document.getElementById('archive-panel');
+  const lbl      = document.getElementById('archive-date-label');
+  const list     = document.getElementById('archive-list');
+
+  const d   = new Date(ds + 'T00:00:00');
+  const isToday = ds === today();
+  lbl.innerHTML = lang === 'en' ? `<em>${L().dayNames[d.getDay()]}, ${d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</em>` : `<em>${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${L().dayNames[d.getDay()]})</em>`;
+
+  let html = '';
+
+  // 완료 섹션
+  if (entry.done.length) {
+    html += `<div style="font-size:0.72rem;font-weight:500;color:var(--done-color);margin-bottom:8px;letter-spacing:0.04em;">${L().doneFlag} · ${entry.done.length}${L().items}</div>`;
+    html += entry.done.map(t => `
+      <div class="archive-item" style="border-left:3px solid var(--done-color)">
+        <div class="archive-item-name"><span class="flag">🏁</span>${esc(t.name)}</div>
+        <div class="archive-item-meta">
+          <span>${L().started} ${fmtDate(t.startDate)}</span>
+          <span>${L().completed} ${fmtDT(t.doneAt)}</span>
+          ${t.closedAsIs ? `<span style="color:var(--warn);font-weight:500">${t.progress}% 달성</span>` : ''}
+          ${t.rolledFrom ? `<span>${L().totalDays}${daysSince(t.rolledFrom) + 1}${L().daysSuffix}</span>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  // 진행중 섹션
+  if (entry.active.length) {
+    if (html) html += `<div style="height:10px"></div>`;
+    html += `<div style="font-size:0.72rem;font-weight:500;color:var(--accent);margin-bottom:8px;letter-spacing:0.04em;">${L().activeFlag} · ${entry.active.length}${L().items}</div>`;
+    html += entry.active.map(t => `
+      <div class="archive-item" style="border-left:3px solid var(--accent-mid)">
+        <div class="archive-item-name" style="color:var(--text)">${esc(t.name)}</div>
+        <div class="archive-item-meta">
+          <span>${L().started} ${fmtDate(t.startDate)}</span>
+          <span style="font-weight:500;color:var(--accent)">${t.progress}${L().pctDone}</span>
+          ${t.rolledFrom ? `<span>${daysSince(t.rolledFrom)}${L().days}</span>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  if (!html) {
+    html = `<div class="archive-empty">${L().noRecord}</div>`;
+  }
+
+  list.innerHTML = html;
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeArchive() {
+  selectedDate = null;
+  document.getElementById('archive-panel').classList.remove('visible');
+  renderCal();
+}
+
+// ─── export / import ───────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], {type: 'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  a.href = url; a.download = `todo-backup-${stamp}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(L().toastExport);
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      let parsed = JSON.parse(ev.target.result);
+      // support both raw array and {tasks:[...]} object
+      if (!Array.isArray(parsed)) {
+        if (parsed && Array.isArray(parsed.tasks)) parsed = parsed.tasks;
+        else throw new Error('not an array');
+      }
+      // validate each item has at minimum an id and name
+      const imported = parsed.filter(item => item && (item.id !== undefined) && item.name);
+      if (!imported.length) throw new Error('empty');
+      const existingIds = new Set(tasks.map(t => t.id));
+      const newItems = imported.filter(item => !existingIds.has(item.id));
+      tasks = [...newItems, ...tasks];
+      save(); render();
+      showToast(`✓ ${newItems.length}${L().toastImport}`);
+    } catch(err) { showToast(L().toastImportErr); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+
+// ─── i18n ──────────────────────────────────────────────────
+const I18N = {
+  ko: {
+    subtitle:       'Track it. Move it. Done.',
+    tabTodo:        '할 일 목록',
+    tabCal:         '캘린더 아카이브',
+    statTotal:      '전체 항목',
+    statActive:     '진행중',
+    statRoll:       '이월된 항목',
+    placeholder:    "What's on your plate today?",
+    addBtn:         '+ 추가',
+    exportBtn:      '내보내기',
+    importBtn:      '불러오기',
+    ioHint:         'JSON으로 다른 기기와 동기화',
+    filterActive:   '진행중',
+    filterAll:      '전체',
+    emptyAll:       '아직 항목이 없어요',
+    emptyDone:      '모두 완료했어요 🎉',
+    emptyDoneSub:   '캘린더 탭에서 완료 기록을 확인하세요',
+    sectionActive:  '⚡ 진행중',
+    sectionNone:    '진행중인 항목 없음 🎉',
+    groupDone:      '개 완료',
+    labelToday:     '오늘',
+    labelYesterday: '어제',
+    doneFlag:       '🏁 완료',
+    activeFlag:     '⚡ 진행중',
+    started:        '시작',
+    completed:      '완료',
+    days:           '일째 진행중',
+    totalDays:      '총',
+    daysSuffix:     '일 소요',
+    pctDone:        '% 완료',
+    noRecord:       '이 날 기록된 항목이 없어요',
+    closeArchive:   '✕ 닫기',
+    toastExport:    '✓ JSON 파일로 내보냈어요',
+    toastImport:    '개 항목을 불러왔어요',
+    toastImportErr: '⚠ 올바른 JSON 파일이 아니에요',
+    items:          '개 항목',
+    langBtn:        'EN',
+    dayNames:       ['일','월','화','수','목','금','토'],
+  },
+  en: {
+    subtitle:       'Track it. Move it. Done.',
+    tabTodo:        'My Tasks',
+    tabCal:         'Calendar Archive',
+    statTotal:      'Total',
+    statActive:     'In Progress',
+    statRoll:       'Carried Over',
+    placeholder:    "What's on your plate today?",
+    addBtn:         '+ Add',
+    exportBtn:      'Export',
+    importBtn:      'Import',
+    ioHint:         'Sync across devices via JSON',
+    filterActive:   'In Progress',
+    filterAll:      'All',
+    emptyAll:       'No tasks yet',
+    emptyDone:      'All done for now 🎉',
+    emptyDoneSub:   'Check the Calendar tab for your history',
+    sectionActive:  '⚡ In Progress',
+    sectionNone:    'Nothing in progress 🎉',
+    groupDone:      ' done',
+    labelToday:     'Today',
+    labelYesterday: 'Yesterday',
+    doneFlag:       '🏁 Completed',
+    activeFlag:     '⚡ In Progress',
+    started:        'Started',
+    completed:      'Done',
+    days:           ' days in progress',
+    totalDays:      '',
+    daysSuffix:     ' days total',
+    pctDone:        '% done',
+    noRecord:       'Nothing recorded on this day',
+    closeArchive:   '✕ Close',
+    toastExport:    '✓ Exported as JSON',
+    toastImport:    ' tasks imported',
+    toastImportErr: '⚠ Invalid JSON file',
+    items:          ' tasks',
+    langBtn:        'KO',
+    dayNames:       ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  }
+};
+
+let lang = localStorage.getItem('lang') || 'ko';
+const L = () => I18N[lang];
+
+function toggleLang() {
+  lang = lang === 'ko' ? 'en' : 'ko';
+  localStorage.setItem('lang', lang);
+  applyLang();
+  render();
+  if (currentTab === 'cal') renderCal();
+}
+
+function applyLang() {
+  const LL = L();
+  const $ = id => document.getElementById(id);
+  const $q = sel => document.querySelector(sel);
+  const $qa = sel => document.querySelectorAll(sel);
+
+  if ($('lang-btn'))    $('lang-btn').textContent = LL.langBtn;
+  if ($q('.brand p'))   $q('.brand p').textContent = LL.subtitle;
+
+  // tab labels: first text node before the badge span
+  const tabTodo = $('tab-todo');
+  if (tabTodo) {
+    const tn = [...tabTodo.childNodes].find(n => n.nodeType === 3);
+    if (tn) tn.textContent = LL.tabTodo + ' ';
+  }
+  const tabCal = $('tab-cal');
+  if (tabCal) {
+    const tn = [...tabCal.childNodes].find(n => n.nodeType === 3);
+    if (tn) tn.textContent = LL.tabCal + ' ';
+  }
+
+  const statCards = $qa('.stat-card .stat-l');
+  if (statCards[0]) statCards[0].textContent = LL.statTotal;
+  if (statCards[1]) statCards[1].textContent = LL.statActive;
+  if (statCards[2]) statCards[2].textContent = LL.statRoll;
+
+  if ($('new-task'))        $('new-task').placeholder = LL.placeholder;
+  if ($q('.add-btn'))       $q('.add-btn').textContent = LL.addBtn;
+
+  const ioBtns = $qa('.io-btn');
+  if (ioBtns[0]) ioBtns[0].innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 11v1.5A1.5 1.5 0 004.5 14h7A1.5 1.5 0 0013 12.5V11"/></svg>${LL.exportBtn}`;
+  if (ioBtns[1]) ioBtns[1].innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 11v1.5A1.5 1.5 0 004.5 14h7A1.5 1.5 0 0013 12.5V11"/></svg>${LL.importBtn}`;
+  if ($q('.io-hint'))       $q('.io-hint').textContent = LL.ioHint;
+
+
+
+  const ac = $q('.archive-close');
+  if (ac) ac.textContent = LL.closeArchive;
+}
+
+// ─── init ──────────────────────────────────────────────────
+document.getElementById('new-task').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+initCal();
+load();
+render();
+applyLang();
+</script>
+</body>
+</html>
