@@ -1098,7 +1098,7 @@ function render() {
   // ── done tasks: grouped by completion date, newest group first
   const doneByDate = {};
   tasks.filter(t => (t.progress === 100 || t.closedAsIs) && t.doneAt).forEach(t => {
-    const ds = isoDate(new Date(t.doneAt));
+    const ds = t.doneAt.slice(0, 10); // extract date directly, avoid UTC parsing
     if (!doneByDate[ds]) doneByDate[ds] = [];
     doneByDate[ds].push(t);
   });
